@@ -8,43 +8,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
-
-// Type definitions
-interface Trade {
-  id: string
-  date: string
-  holdingTime?: number
-  pair?: string
-  lot?: number
-  type: 'Long' | 'Short'
-  entry: number
-  entryLogic?: 'Manual' | 'Limit'
-  setup?: string
-  timeFrame?: string
-  stopLoss: number
-  exit: number
-  exitLogic?: 'Manual' | 'SL' | 'TP' | 'BR' | 'SP'
-  profitLoss?: number
-  takeProfit: number
-  notes: string
-  roi?: string
-  rMultiple?: number
-  risk?: 'FULL' | 'HALF'
-  rules?: 'Yes' | 'No'
-}
-
-interface Statistics {
-  totalTrades: number
-  wins: number
-  losses: number
-  winRate: number
-  avgRMultiple: number
-  profitFactor: number
-  avgHoldingTime: number
-  maxDrawdown: number
-  netProfit: number
-}
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
+import { Statistics, Trade } from '@/types/Models'
 
 // Initial data for demonstration
 const initialTrades: Trade[] = [
@@ -63,7 +33,7 @@ const initialTrades: Trade[] = [
     pair: 'EUR/USD',
     lot: 1.0,
     entryLogic: 'Manual',
-    setup: 'Breakout',
+    strategy: 'Breakout',
     timeFrame: '1H',
     exitLogic: 'TP',
     roi: '1.67%',
@@ -85,7 +55,7 @@ const initialTrades: Trade[] = [
     pair: 'GBP/USD',
     lot: 0.5,
     entryLogic: 'Limit',
-    setup: 'Reversal',
+    strategy: 'Reversal',
     timeFrame: '30M',
     exitLogic: 'SL',
     roi: '-0.98%',
@@ -119,10 +89,10 @@ export default function TradingJournal() {
     notes: '',
     pair: '',
     lot: 0,
-    entryLogic: undefined,
-    setup: '',
+    entryLogic: 'Limit',
+    strategy: '',
     timeFrame: '',
-    exitLogic: undefined,
+    exitLogic: 'Manual',
     risk: undefined,
     rules: undefined
   })
@@ -148,18 +118,18 @@ export default function TradingJournal() {
     const wins = trades.filter(trade => (trade.profitLoss || 0) > 0).length
     const losses = trades.filter(trade => (trade.profitLoss || 0) < 0).length
     const winRate = (wins / trades.length) * 100
-    
+
     const netProfit = trades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0)
-    
+
     const rMultiples = trades.map(trade => trade.rMultiple || 0)
     const avgRMultiple = rMultiples.reduce((sum, r) => sum + r, 0) / trades.length
-    
+
     const profits = trades.filter(trade => (trade.profitLoss || 0) > 0).map(trade => trade.profitLoss || 0)
     const lossesAmount = trades.filter(trade => (trade.profitLoss || 0) < 0).map(trade => Math.abs(trade.profitLoss || 0))
-    const profitFactor = lossesAmount.reduce((sum, loss) => sum + loss, 0) > 0 
+    const profitFactor = lossesAmount.reduce((sum, loss) => sum + loss, 0) > 0
       ? profits.reduce((sum, profit) => sum + profit, 0) / lossesAmount.reduce((sum, loss) => sum + loss, 0)
       : profits.reduce((sum, profit) => sum + profit, 0)
-    
+
     const holdingTimes = trades.map(trade => trade.holdingTime || 0)
     const avgHoldingTime = holdingTimes.reduce((sum, time) => sum + time, 0) / trades.length
 
@@ -167,9 +137,9 @@ export default function TradingJournal() {
     let maxDrawdown = 0
     let peak = trades[0].profitLoss || 0
     let currentDrawdown = 0
-    
+
     for (let i = 1; i < trades.length; i++) {
-      const currentProfit = (trades[i].profitLoss || 0) + (trades[i-1].profitLoss || 0)
+      const currentProfit = (trades[i].profitLoss || 0) + (trades[i - 1].profitLoss || 0)
       if (currentProfit > peak) {
         peak = currentProfit
       } else {
@@ -195,17 +165,17 @@ export default function TradingJournal() {
 
   // Handle adding a new trade
   const handleAddTrade = () => {
-    const risk = newTrade.type === 'Long' 
+    const risk = newTrade.type === 'Long'
       ? newTrade.entry - newTrade.stopLoss
       : newTrade.stopLoss - newTrade.entry
-    
+
     const profitLoss = newTrade.type === 'Long'
       ? newTrade.exit - newTrade.entry
       : newTrade.entry - newTrade.exit
-    
+
     const rMultiple = risk !== 0 ? profitLoss / risk : 0
     const roi = risk !== 0 ? `${((profitLoss / newTrade.entry) * 100).toFixed(2)}%` : '0%'
-    
+
     const trade: Trade = {
       id: Date.now().toString(),
       ...newTrade,
@@ -214,9 +184,9 @@ export default function TradingJournal() {
       roi,
       holdingTime: Math.floor(Math.random() * 240) + 15 // Random holding time for demo
     }
-    
+
     setTrades([...trades, trade])
-    
+
     // Reset form
     setNewTrade({
       date: new Date().toISOString().split('T')[0],
@@ -228,10 +198,10 @@ export default function TradingJournal() {
       notes: '',
       pair: '',
       lot: 0,
-      entryLogic: undefined,
-      setup: '',
+      entryLogic: 'Limit',
+      strategy: '',
       timeFrame: '',
-      exitLogic: undefined,
+      exitLogic: 'Manual',
       risk: undefined,
       rules: undefined
     })
@@ -257,7 +227,7 @@ export default function TradingJournal() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold">Trading Journal</h1>
-        
+
         {/* Dashboard Summary */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
@@ -295,10 +265,29 @@ export default function TradingJournal() {
         <Tabs defaultValue="journal" className="w-full">
           <TabsList>
             <TabsTrigger value="journal">Trade Journal</TabsTrigger>
-            <TabsTrigger value="stats">Statistics</TabsTrigger>
+            <TabsTrigger value="strategies">Edge Strategies</TabsTrigger>
+            {/* <TabsTrigger value="stats">Statistics</TabsTrigger>
             <TabsTrigger value="charts">Performance Charts</TabsTrigger>
-            <TabsTrigger value="notes">Session Notes</TabsTrigger>
+            <TabsTrigger value="notes">Session Notes</TabsTrigger> */}
           </TabsList>
+
+              <TabsContent value="strategies">
+            <Card>
+              <CardHeader>
+                <CardTitle>Trading Strategies</CardTitle>
+                <CardDescription>Record your thoughts and reflections after trading sessions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="What did you learn today? What went well? What could be improved?"
+                  className="min-h-[200px]"
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                />
+                <Button className="mt-4">Save Notes</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Trade Journal Tab */}
           <TabsContent value="journal">
@@ -314,7 +303,7 @@ export default function TradingJournal() {
                       id="date"
                       type="date"
                       value={newTrade.date}
-                      onChange={(e) => setNewTrade({...newTrade, date: e.target.value})}
+                      onChange={(e) => setNewTrade({ ...newTrade, date: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -323,7 +312,7 @@ export default function TradingJournal() {
                       id="pair"
                       type="text"
                       value={newTrade.pair || ''}
-                      onChange={(e) => setNewTrade({...newTrade, pair: e.target.value})}
+                      onChange={(e) => setNewTrade({ ...newTrade, pair: e.target.value })}
                       placeholder="EUR/USD"
                     />
                   </div>
@@ -334,14 +323,14 @@ export default function TradingJournal() {
                       type="number"
                       step="0.01"
                       value={newTrade.lot || ''}
-                      onChange={(e) => setNewTrade({...newTrade, lot: parseFloat(e.target.value)})}
+                      onChange={(e) => setNewTrade({ ...newTrade, lot: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Type</Label>
                     <Select
                       value={newTrade.type}
-                      onValueChange={(value: 'Long' | 'Short') => setNewTrade({...newTrade, type: value})}
+                      onValueChange={(value: 'Long' | 'Short') => setNewTrade({ ...newTrade, type: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
@@ -359,14 +348,14 @@ export default function TradingJournal() {
                       type="number"
                       step="0.01"
                       value={newTrade.entry || ''}
-                      onChange={(e) => setNewTrade({...newTrade, entry: parseFloat(e.target.value)})}
+                      onChange={(e) => setNewTrade({ ...newTrade, entry: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="entryLogic">Entry Logic</Label>
                     <Select
                       value={newTrade.entryLogic || ''}
-                      onValueChange={(value: 'Manual' | 'Limit') => setNewTrade({...newTrade, entryLogic: value})}
+                      onValueChange={(value: 'Manual' | 'Limit') => setNewTrade({ ...newTrade, entryLogic: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select entry logic" />
@@ -378,12 +367,12 @@ export default function TradingJournal() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="setup">Setup</Label>
+                    <Label htmlFor="strategy">strategy</Label>
                     <Input
-                      id="setup"
+                      id="strategy"
                       type="text"
-                      value={newTrade.setup || ''}
-                      onChange={(e) => setNewTrade({...newTrade, setup: e.target.value})}
+                      value={newTrade.strategy || ''}
+                      onChange={(e) => setNewTrade({ ...newTrade, strategy: e.target.value })}
                       placeholder="Breakout, Reversal, etc."
                     />
                   </div>
@@ -393,7 +382,7 @@ export default function TradingJournal() {
                       id="timeFrame"
                       type="text"
                       value={newTrade.timeFrame || ''}
-                      onChange={(e) => setNewTrade({...newTrade, timeFrame: e.target.value})}
+                      onChange={(e) => setNewTrade({ ...newTrade, timeFrame: e.target.value })}
                       placeholder="1H, 4H, Daily, etc."
                     />
                   </div>
@@ -404,7 +393,7 @@ export default function TradingJournal() {
                       type="number"
                       step="0.01"
                       value={newTrade.stopLoss || ''}
-                      onChange={(e) => setNewTrade({...newTrade, stopLoss: parseFloat(e.target.value)})}
+                      onChange={(e) => setNewTrade({ ...newTrade, stopLoss: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -414,7 +403,7 @@ export default function TradingJournal() {
                       type="number"
                       step="0.01"
                       value={newTrade.takeProfit || ''}
-                      onChange={(e) => setNewTrade({...newTrade, takeProfit: parseFloat(e.target.value)})}
+                      onChange={(e) => setNewTrade({ ...newTrade, takeProfit: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -424,14 +413,14 @@ export default function TradingJournal() {
                       type="number"
                       step="0.01"
                       value={newTrade.exit || ''}
-                      onChange={(e) => setNewTrade({...newTrade, exit: parseFloat(e.target.value)})}
+                      onChange={(e) => setNewTrade({ ...newTrade, exit: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="exitLogic">Exit Logic</Label>
                     <Select
                       value={newTrade.exitLogic || ''}
-                      onValueChange={(value: 'Manual' | 'SL' | 'TP' | 'BR' | 'SP') => setNewTrade({...newTrade, exitLogic: value})}
+                      onValueChange={(value: 'Manual' | 'SL' | 'TP' | 'BR' | 'SP') => setNewTrade({ ...newTrade, exitLogic: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select exit logic" />
@@ -449,7 +438,7 @@ export default function TradingJournal() {
                     <Label htmlFor="risk">Risk Management</Label>
                     <Select
                       value={newTrade.risk || ''}
-                      onValueChange={(value: 'FULL' | 'HALF') => setNewTrade({...newTrade, risk: value})}
+                      onValueChange={(value: 'FULL' | 'HALF') => setNewTrade({ ...newTrade, risk: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select risk level" />
@@ -464,7 +453,7 @@ export default function TradingJournal() {
                     <Label htmlFor="rules">Followed Rules</Label>
                     <Select
                       value={newTrade.rules || ''}
-                      onValueChange={(value: 'Yes' | 'No') => setNewTrade({...newTrade, rules: value})}
+                      onValueChange={(value: 'Yes' | 'No') => setNewTrade({ ...newTrade, rules: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Did you follow rules?" />
@@ -481,7 +470,7 @@ export default function TradingJournal() {
                   <Textarea
                     id="notes"
                     value={newTrade.notes}
-                    onChange={(e) => setNewTrade({...newTrade, notes: e.target.value})}
+                    onChange={(e) => setNewTrade({ ...newTrade, notes: e.target.value })}
                   />
                 </div>
                 <Button onClick={handleAddTrade}>Add Trade</Button>
@@ -502,7 +491,7 @@ export default function TradingJournal() {
                       <TableHead>Type</TableHead>
                       <TableHead>Entry</TableHead>
                       <TableHead>Entry Type</TableHead>
-                      <TableHead>Setup</TableHead>
+                      <TableHead>strategy</TableHead>
                       <TableHead>Time</TableHead>
                       <TableHead>Stop</TableHead>
                       <TableHead>Exit</TableHead>
@@ -522,23 +511,35 @@ export default function TradingJournal() {
                         <TableCell>{trade.date}</TableCell>
                         <TableCell>{trade.pair || '-'}</TableCell>
                         <TableCell>{trade.lot || '-'}</TableCell>
-                        <TableCell>{trade.type}</TableCell>
+                        <TableCell >
+                          <span className={` font-semibold p-1 rounded ${trade.type === 'Long' ? 'bg-[#00bc7d]' : 'bg-[#FF8042]'}`}>{trade.type}</span></TableCell>
                         <TableCell>${trade.entry.toFixed(2)}</TableCell>
-                        <TableCell>{trade.entryLogic || '-'}</TableCell>
-                        <TableCell>{trade.setup || '-'}</TableCell>
+                        <TableCell><span className={` font-semibold p-1 rounded ${trade.entryLogic === 'Limit' ? 'bg-[#89b4fa]' : trade.entryLogic === 'Manual' ? 'bg-[#FF8042]' : ''}`}>{trade.entryLogic || '-'}</span></TableCell>
+                        <TableCell className='max-w-3xs truncate'>{trade.strategy || '-'}</TableCell>
                         <TableCell>{trade.timeFrame || '-'}</TableCell>
                         <TableCell>${trade.stopLoss.toFixed(2)}</TableCell>
                         <TableCell>${trade.exit.toFixed(2)}</TableCell>
-                        <TableCell>{trade.exitLogic || '-'}</TableCell>
-                        <TableCell className={trade.profitLoss && trade.profitLoss > 0 ? 'text-green-600' : 'text-red-600'}>
+                        <TableCell> <span className={` font-semibold p-1 rounded ${trade.exitLogic === 'TP' ? 'bg-[#00bc7d]' : trade.exitLogic === 'SL' ? 'bg-destructive' : trade.exitLogic === 'Manual' ? 'bg-[#FF8042]' : !trade.exitLogic ? '' : 'bg-[#8884d8]'}`}>{trade.exitLogic === 'Manual' ? 'ML' : trade.exitLogic || '-'}</span></TableCell>
+                        <TableCell className={trade.profitLoss && trade.profitLoss > 0 ? 'text-[#00C49F]' : 'text-destructive'}>
                           ${trade.profitLoss?.toFixed(2)}
                         </TableCell>
                         <TableCell>${trade.takeProfit.toFixed(2)}</TableCell>
                         <TableCell>{trade.roi || '-'}</TableCell>
                         <TableCell>{trade.rMultiple?.toFixed(2) || '-'}</TableCell>
-                        <TableCell>{trade.risk || '-'}</TableCell>
-                        <TableCell>{trade.rules || '-'}</TableCell>
-                        <TableCell className="max-w-xs truncate">{trade.notes}</TableCell>
+                        <TableCell> <span className={` font-semibold p-1 rounded ${trade.risk === 'FULL' ? 'bg-[#89b4fa]' : trade.risk === 'HALF' ? 'bg-[#f9e2af]' : ''}`}>{trade.risk || '-'}</span></TableCell>
+                        <TableCell><span className={` font-semibold p-1 rounded ${trade.rules === 'Yes' ? 'bg-[#00bc7d]' : trade.rules === 'No' ? 'bg-destructive' : ''}`}>{trade.rules || '-'}</span></TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <span className="truncate block cursor-pointer">
+                                {trade.notes}
+                              </span>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="">
+                              <p>{trade.notes}</p>
+                            </HoverCardContent>
+                          </HoverCard>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -548,7 +549,7 @@ export default function TradingJournal() {
           </TabsContent>
 
           {/* Statistics Tab */}
-          <TabsContent value="stats">
+          {/* <TabsContent value="stats">
             <Card>
               <CardHeader>
                 <CardTitle>Performance Statistics</CardTitle>
@@ -598,10 +599,10 @@ export default function TradingJournal() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
 
           {/* Charts Tab */}
-          <TabsContent value="charts">
+          {/* <TabsContent value="charts">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -614,14 +615,14 @@ export default function TradingJournal() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip />
+                        <RechartsTooltip />
                         <Line type="monotone" dataKey="equity" stroke="#8884d8" activeDot={{ r: 8 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>R Multiple Distribution</CardTitle>
@@ -633,14 +634,13 @@ export default function TradingJournal() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip />
                         <Bar dataKey="value" fill="#8884d8" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>Win/Loss Ratio</CardTitle>
@@ -663,17 +663,16 @@ export default function TradingJournal() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </TabsContent> */}
 
           {/* Notes Tab */}
-          <TabsContent value="notes">
+          {/* <TabsContent value="notes">
             <Card>
               <CardHeader>
                 <CardTitle>Trading Session Notes</CardTitle>
@@ -689,7 +688,9 @@ export default function TradingJournal() {
                 <Button className="mt-4">Save Notes</Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
+
+      
         </Tabs>
       </div>
     </div>
