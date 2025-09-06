@@ -33,7 +33,7 @@ export interface Strategy {
   // Market Context
   instruments: string[] // e.g., ['EUR/USD', 'XAU/USD']
   timeframes?: string[] // e.g., ['M15', 'H1', 'Daily']
-  session?: 'London' | 'NewYork' | 'Asian' | 'All'
+  session: 'All' | 'NewYork' | 'Asian' | 'London'
 
   // Rules & Conditions
   indicators?: string[] // e.g., ['RSI', 'MACD', 'EMA50']

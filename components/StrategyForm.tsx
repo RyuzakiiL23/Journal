@@ -1,7 +1,15 @@
 'use client';
 
-import { Strategy } from '@/types/Models';
 import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Strategy } from '@/types/Models';
 
 interface StrategyFormProps {
   onSubmit: (strategy: Omit<Strategy, 'id'>) => void;
@@ -123,288 +131,253 @@ export default function StrategyForm({ onSubmit, editingStrategy, onCancel }: St
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg shadow-md">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Name */}
-        <div className="col-span-2">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Strategy Name *
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-            required
-          />
-        </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{editingStrategy ? 'Edit Strategy' : 'Create New Strategy'}</CardTitle>
+        <CardDescription>
+          {editingStrategy 
+            ? 'Update your trading strategy details' 
+            : 'Define a new trading strategy with all necessary parameters'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="market">Market Context</TabsTrigger>
+              <TabsTrigger value="rules">Rules & Conditions</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="basic">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Strategy Name *</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="e.g., London Breakout"
+                  />
+                </div>
 
-        {/* Description */}
-        <div className="col-span-2">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-          />
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe your strategy..."
+                    rows={3}
+                  />
+                </div>
 
-        {/* Type */}
-        <div>
-          <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-            Strategy Type *
-          </label>
-          <select
-            id="type"
-            value={type}
-            onChange={(e) => setType(e.target.value as Strategy['type'])}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-            required
-          >
-            {strategyTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Strategy Type *</Label>
+                  <Select value={type} onValueChange={(value) => setType(value as Strategy['type'])}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select strategy type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {strategyTypes.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
 
-        {/* Session */}
-        <div>
-          <label htmlFor="session" className="block text-sm font-medium text-gray-700">
-            Trading Session
-          </label>
-          <select
-            id="session"
-            value={session || ''}
-            onChange={(e) => setSession(e.target.value as Strategy['session'])}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-          >
-            <option value="">Select Session</option>
-            {sessions.map((session) => (
-              <option key={session} value={session}>
-                {session}
-              </option>
-            ))}
-          </select>
-        </div>
+            <TabsContent value="market">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Instruments *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={instrumentInput}
+                      onChange={(e) => setInstrumentInput(e.target.value)}
+                      placeholder="e.g., EUR/USD"
+                    />
+                    <Button type="button" onClick={handleAddInstrument}>
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {instruments.map((instrument, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {instrument}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveInstrument(index)}
+                          className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
 
-        {/* Instruments */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Instruments *</label>
-          <div className="flex mt-1">
-            <input
-              type="text"
-              value={instrumentInput}
-              onChange={(e) => setInstrumentInput(e.target.value)}
-              placeholder="e.g., EUR/USD"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-            />
-            <button
-              type="button"
-              onClick={handleAddInstrument}
-              className="ml-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Add
-            </button>
+                <div className="space-y-2">
+                  <Label>Timeframes</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {commonTimeframes.map((timeframe) => (
+                      <Button
+                        key={timeframe}
+                        type="button"
+                        variant={timeframes.includes(timeframe) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleToggleTimeframe(timeframe)}
+                      >
+                        {timeframe}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="session">Trading Session</Label>
+                  <Select value={session} onValueChange={(value) => setSession(value as Strategy['session'])}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select trading session" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sessions.map((session) => (
+                        <SelectItem key={session} value={session}>{session}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="rules">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Indicators</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {commonIndicators.map((indicator) => (
+                      <Button
+                        key={indicator}
+                        type="button"
+                        variant={indicators.includes(indicator) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleToggleIndicator(indicator)}
+                      >
+                        {indicator}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Entry Rules</Label>
+                  {entryRules.map((rule, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={rule}
+                        onChange={(e) => handleRuleChange(entryRules, setEntryRules, index, e.target.value)}
+                        placeholder="Describe entry condition"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleRemoveRule(entryRules, setEntryRules, index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleAddRule(entryRules, setEntryRules)}
+                  >
+                    Add Entry Rule
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Exit Rules</Label>
+                  {exitRules.map((rule, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={rule}
+                        onChange={(e) => handleRuleChange(exitRules, setExitRules, index, e.target.value)}
+                        placeholder="Describe exit condition"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleRemoveRule(exitRules, setExitRules, index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleAddRule(exitRules, setExitRules)}
+                  >
+                    Add Exit Rule
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="riskManagement">Risk Management</Label>
+                  <Input
+                    id="riskManagement"
+                    value={riskManagement}
+                    onChange={(e) => setRiskManagement(e.target.value)}
+                    placeholder="e.g., Risk 1R per trade, max 2% equity"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="e.g., momentum, pullback"
+                    />
+                    <Button type="button" onClick={handleAddTag}>
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {tags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center gap-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(index)}
+                          className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-3 pt-4">
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+            <Button type="submit">
+              {editingStrategy ? 'Update Strategy' : 'Create Strategy'}
+            </Button>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {instruments.map((instrument, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center py-1 pl-3 pr-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-              >
-                {instrument}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveInstrument(index)}
-                  className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full text-blue-600 hover:bg-blue-200 focus:outline-none focus:bg-blue-200"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Timeframes */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Timeframes</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {commonTimeframes.map((timeframe) => (
-              <button
-                key={timeframe}
-                type="button"
-                onClick={() => handleToggleTimeframe(timeframe)}
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  timeframes.includes(timeframe)
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                {timeframe}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Indicators */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Indicators</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {commonIndicators.map((indicator) => (
-              <button
-                key={indicator}
-                type="button"
-                onClick={() => handleToggleIndicator(indicator)}
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  indicators.includes(indicator)
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                {indicator}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Entry Rules */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Entry Rules</label>
-          {entryRules.map((rule, index) => (
-            <div key={index} className="flex mt-2">
-              <input
-                type="text"
-                value={rule}
-                onChange={(e) => handleRuleChange(entryRules, setEntryRules, index, e.target.value)}
-                placeholder="Describe entry condition"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-              />
-              <button
-                type="button"
-                onClick={() => handleRemoveRule(entryRules, setEntryRules, index)}
-                className="ml-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => handleAddRule(entryRules, setEntryRules)}
-            className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Add Entry Rule
-          </button>
-        </div>
-
-        {/* Exit Rules */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Exit Rules</label>
-          {exitRules.map((rule, index) => (
-            <div key={index} className="flex mt-2">
-              <input
-                type="text"
-                value={rule}
-                onChange={(e) => handleRuleChange(exitRules, setExitRules, index, e.target.value)}
-                placeholder="Describe exit condition"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-              />
-              <button
-                type="button"
-                onClick={() => handleRemoveRule(exitRules, setExitRules, index)}
-                className="ml-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => handleAddRule(exitRules, setExitRules)}
-            className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Add Exit Rule
-          </button>
-        </div>
-
-        {/* Risk Management */}
-        <div className="col-span-2">
-          <label htmlFor="riskManagement" className="block text-sm font-medium text-gray-700">
-            Risk Management
-          </label>
-          <input
-            type="text"
-            id="riskManagement"
-            value={riskManagement}
-            onChange={(e) => setRiskManagement(e.target.value)}
-            placeholder="e.g., Risk 1R per trade, max 2% equity"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-          />
-        </div>
-
-        {/* Tags */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Tags</label>
-          <div className="flex mt-1">
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              placeholder="e.g., momentum, pullback"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-            />
-            <button
-              type="button"
-              onClick={handleAddTag}
-              className="ml-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Add
-            </button>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {tags.map((tag, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center py-1 pl-3 pr-2 rounded-full text-sm font-medium bg-green-100 text-green-800"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(index)}
-                  className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full text-green-600 hover:bg-green-200 focus:outline-none focus:bg-green-200"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end space-x-3 pt-4">
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-        )}
-        <button
-          type="submit"
-          className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          {editingStrategy ? 'Update Strategy' : 'Create Strategy'}
-        </button>
-      </div>
-    </form>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
