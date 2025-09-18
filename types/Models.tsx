@@ -1,6 +1,6 @@
 // Type definitions
 export interface Trade {
-  id: string
+  id: number
   strategy: string
   date: string
   holdingTime?: number

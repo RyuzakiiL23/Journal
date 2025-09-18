@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Strategy } from '@/types/Models';
 
 interface StrategyFormProps {
@@ -142,14 +141,6 @@ export default function StrategyForm({ onSubmit, editingStrategy, onCancel }: St
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="market">Market Context</TabsTrigger>
-              <TabsTrigger value="rules">Rules & Conditions</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="basic">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Strategy Name *</Label>
@@ -187,9 +178,7 @@ export default function StrategyForm({ onSubmit, editingStrategy, onCancel }: St
                   </Select>
                 </div>
               </div>
-            </TabsContent>
 
-            <TabsContent value="market">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Instruments *</Label>
@@ -250,9 +239,7 @@ export default function StrategyForm({ onSubmit, editingStrategy, onCancel }: St
                   </Select>
                 </div>
               </div>
-            </TabsContent>
 
-            <TabsContent value="rules">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Indicators</Label>
@@ -363,8 +350,6 @@ export default function StrategyForm({ onSubmit, editingStrategy, onCancel }: St
                   </div>
                 </div>
               </div>
-            </TabsContent>
-          </Tabs>
 
           <div className="flex justify-end gap-3 pt-4">
             {onCancel && (

@@ -15,11 +15,12 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import { Statistics, Trade } from '@/types/Models'
+import StrategyManager from '@/components/StrategyManager'
 
 // Initial data for demonstration
 const initialTrades: Trade[] = [
   {
-    id: '1',
+    id: 1,
     date: '2023-05-15',
     entry: 150.25,
     exit: 152.75,
@@ -41,7 +42,7 @@ const initialTrades: Trade[] = [
     rules: 'Yes'
   },
   {
-    id: '2',
+    id: 2,
     date: '2023-05-16',
     entry: 153.00,
     exit: 151.50,
@@ -67,7 +68,7 @@ const initialTrades: Trade[] = [
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function TradingJournal() {
-  const [trades, setTrades] = useState<Trade[]>(initialTrades)
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [statistics, setStatistics] = useState<Statistics>({
     totalTrades: 0,
     wins: 0,
@@ -97,6 +98,23 @@ export default function TradingJournal() {
     rules: undefined
   })
   const [sessionNotes, setSessionNotes] = useState('')
+
+    // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("trades")
+    if (saved) {
+      try {
+        setTrades(JSON.parse(saved))
+      } catch (e) {
+        console.error("Error parsing trades from localStorage", e)
+      }
+    }
+  }, [])
+
+  // Save to localStorage whenever trades changes
+  useEffect(() => {
+    localStorage.setItem("trades", JSON.stringify(trades))
+  }, [trades])
 
   // Calculate statistics when trades change
   useEffect(() => {
@@ -177,7 +195,7 @@ export default function TradingJournal() {
     const roi = risk !== 0 ? `${((profitLoss / newTrade.entry) * 100).toFixed(2)}%` : '0%'
 
     const trade: Trade = {
-      id: Date.now().toString(),
+      id: Date.now(),
       ...newTrade,
       profitLoss,
       rMultiple,
@@ -226,42 +244,6 @@ export default function TradingJournal() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Trading Journal</h1>
-
-        {/* Dashboard Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Trades</CardDescription>
-              <CardTitle className="text-4xl">{statistics.totalTrades}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Wins / Losses</CardDescription>
-              <CardTitle className="text-4xl">{statistics.wins} / {statistics.losses}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Win Rate</CardDescription>
-              <CardTitle className="text-4xl">{statistics.winRate.toFixed(1)}%</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Net Profit</CardDescription>
-              <CardTitle className="text-4xl">${statistics.netProfit.toFixed(2)}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Avg R Multiple</CardDescription>
-              <CardTitle className="text-4xl">{statistics.avgRMultiple.toFixed(2)}</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-
         <Tabs defaultValue="journal" className="w-full">
           <TabsList>
             <TabsTrigger value="journal">Trade Journal</TabsTrigger>
@@ -271,7 +253,7 @@ export default function TradingJournal() {
             <TabsTrigger value="notes">Session Notes</TabsTrigger> */}
           </TabsList>
 
-              <TabsContent value="strategies">
+              {/* <TabsContent value="strategies">
             <Card>
               <CardHeader>
                 <CardTitle>Trading Strategies</CardTitle>
@@ -287,11 +269,87 @@ export default function TradingJournal() {
                 <Button className="mt-4">Save Notes</Button>
               </CardContent>
             </Card>
+          </TabsContent> */}
+
+           <TabsContent value="strategies">
+             <StrategyManager/>
           </TabsContent>
 
           {/* Trade Journal Tab */}
           <TabsContent value="journal">
-            <Card>
+
+             <Card className="">
+              <CardHeader>
+                <CardTitle>Trade History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Pair</TableHead>
+                      <TableHead>Lot</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Entry</TableHead>
+                      <TableHead>Entry Type</TableHead>
+                      <TableHead>strategy</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Stop</TableHead>
+                      <TableHead>Exit</TableHead>
+                      <TableHead>Exit Type</TableHead>
+                      <TableHead>P/L</TableHead>
+                      <TableHead>Target</TableHead>
+                      <TableHead>ROI</TableHead>
+                      <TableHead>R Multiple</TableHead>
+                      <TableHead>Risk</TableHead>
+                      <TableHead>Rules</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {trades.map((trade) => (
+                      <TableRow key={trade.id}>
+                        <TableCell>{trade.date}</TableCell>
+                        <TableCell>{trade.pair || '-'}</TableCell>
+                        <TableCell>{trade.lot || '-'}</TableCell>
+                        <TableCell >
+                          <span className={` font-semibold p-1 rounded ${trade.type === 'Long' ? 'bg-[#00bc7d]' : 'bg-[#FF8042]'}`}>{trade.type}</span></TableCell>
+                        <TableCell>${trade.entry.toFixed(2)}</TableCell>
+                        <TableCell><span className={` font-semibold p-1 rounded ${trade.entryLogic === 'Limit' ? 'bg-[#89b4fa]' : trade.entryLogic === 'Manual' ? 'bg-[#FF8042]' : ''}`}>{trade.entryLogic || '-'}</span></TableCell>
+                        <TableCell className='max-w-3xs truncate'>{trade.strategy || '-'}</TableCell>
+                        <TableCell>{trade.timeFrame || '-'}</TableCell>
+                        <TableCell>${trade.stopLoss.toFixed(2)}</TableCell>
+                        <TableCell>${trade.exit.toFixed(2)}</TableCell>
+                        <TableCell> <span className={` font-semibold p-1 rounded ${trade.exitLogic === 'TP' ? 'bg-[#00bc7d]' : trade.exitLogic === 'SL' ? 'bg-destructive' : trade.exitLogic === 'Manual' ? 'bg-[#FF8042]' : !trade.exitLogic ? '' : 'bg-[#8884d8]'}`}>{trade.exitLogic === 'Manual' ? 'ML' : trade.exitLogic || '-'}</span></TableCell>
+                        <TableCell className={trade.profitLoss && trade.profitLoss > 0 ? 'text-[#00C49F]' : 'text-destructive'}>
+                          ${trade.profitLoss?.toFixed(2)}
+                        </TableCell>
+                        <TableCell>${trade.takeProfit.toFixed(2)}</TableCell>
+                        <TableCell>{trade.roi || '-'}</TableCell>
+                        <TableCell>{trade.rMultiple?.toFixed(2) || '-'}</TableCell>
+                        <TableCell> <span className={` font-semibold p-1 rounded ${trade.risk === 'FULL' ? 'bg-[#89b4fa]' : trade.risk === 'HALF' ? 'bg-[#f9e2af]' : ''}`}>{trade.risk || '-'}</span></TableCell>
+                        <TableCell><span className={` font-semibold p-1 rounded ${trade.rules === 'Yes' ? 'bg-[#00bc7d]' : trade.rules === 'No' ? 'bg-destructive' : ''}`}>{trade.rules || '-'}</span></TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <span className="truncate block cursor-pointer">
+                                {trade.notes}
+                              </span>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="">
+                              <p>{trade.notes}</p>
+                            </HoverCardContent>
+                          </HoverCard>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+
+            <Card className='mt-6'>
               <CardHeader>
                 <CardTitle>Add New Trade</CardTitle>
               </CardHeader>
@@ -477,75 +535,7 @@ export default function TradingJournal() {
               </CardContent>
             </Card>
 
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Trade History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Pair</TableHead>
-                      <TableHead>Lot</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Entry</TableHead>
-                      <TableHead>Entry Type</TableHead>
-                      <TableHead>strategy</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Stop</TableHead>
-                      <TableHead>Exit</TableHead>
-                      <TableHead>Exit Type</TableHead>
-                      <TableHead>P/L</TableHead>
-                      <TableHead>Target</TableHead>
-                      <TableHead>ROI</TableHead>
-                      <TableHead>R Multiple</TableHead>
-                      <TableHead>Risk</TableHead>
-                      <TableHead>Rules</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {trades.map((trade) => (
-                      <TableRow key={trade.id}>
-                        <TableCell>{trade.date}</TableCell>
-                        <TableCell>{trade.pair || '-'}</TableCell>
-                        <TableCell>{trade.lot || '-'}</TableCell>
-                        <TableCell >
-                          <span className={` font-semibold p-1 rounded ${trade.type === 'Long' ? 'bg-[#00bc7d]' : 'bg-[#FF8042]'}`}>{trade.type}</span></TableCell>
-                        <TableCell>${trade.entry.toFixed(2)}</TableCell>
-                        <TableCell><span className={` font-semibold p-1 rounded ${trade.entryLogic === 'Limit' ? 'bg-[#89b4fa]' : trade.entryLogic === 'Manual' ? 'bg-[#FF8042]' : ''}`}>{trade.entryLogic || '-'}</span></TableCell>
-                        <TableCell className='max-w-3xs truncate'>{trade.strategy || '-'}</TableCell>
-                        <TableCell>{trade.timeFrame || '-'}</TableCell>
-                        <TableCell>${trade.stopLoss.toFixed(2)}</TableCell>
-                        <TableCell>${trade.exit.toFixed(2)}</TableCell>
-                        <TableCell> <span className={` font-semibold p-1 rounded ${trade.exitLogic === 'TP' ? 'bg-[#00bc7d]' : trade.exitLogic === 'SL' ? 'bg-destructive' : trade.exitLogic === 'Manual' ? 'bg-[#FF8042]' : !trade.exitLogic ? '' : 'bg-[#8884d8]'}`}>{trade.exitLogic === 'Manual' ? 'ML' : trade.exitLogic || '-'}</span></TableCell>
-                        <TableCell className={trade.profitLoss && trade.profitLoss > 0 ? 'text-[#00C49F]' : 'text-destructive'}>
-                          ${trade.profitLoss?.toFixed(2)}
-                        </TableCell>
-                        <TableCell>${trade.takeProfit.toFixed(2)}</TableCell>
-                        <TableCell>{trade.roi || '-'}</TableCell>
-                        <TableCell>{trade.rMultiple?.toFixed(2) || '-'}</TableCell>
-                        <TableCell> <span className={` font-semibold p-1 rounded ${trade.risk === 'FULL' ? 'bg-[#89b4fa]' : trade.risk === 'HALF' ? 'bg-[#f9e2af]' : ''}`}>{trade.risk || '-'}</span></TableCell>
-                        <TableCell><span className={` font-semibold p-1 rounded ${trade.rules === 'Yes' ? 'bg-[#00bc7d]' : trade.rules === 'No' ? 'bg-destructive' : ''}`}>{trade.rules || '-'}</span></TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          <HoverCard>
-                            <HoverCardTrigger asChild>
-                              <span className="truncate block cursor-pointer">
-                                {trade.notes}
-                              </span>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="">
-                              <p>{trade.notes}</p>
-                            </HoverCardContent>
-                          </HoverCard>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+           
           </TabsContent>
 
           {/* Statistics Tab */}

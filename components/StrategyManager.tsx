@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import StrategyTable from './StrategyTable';
 import { Strategy } from '@/types/Models';
 import StrategyForm from './StrategyForm';
@@ -9,7 +9,23 @@ import { Button } from './ui/button';
 export default function StrategyManager() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
-  const [showForm, setShowForm] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("strategies")
+    if (saved) {
+      try {
+        setStrategies(JSON.parse(saved))
+      } catch (e) {
+        console.error("Error parsing strategies from localStorage", e)
+      }
+    }
+  }, [])
+
+  // // Save to localStorage whenever strategies changes
+  // useEffect(() => {
+  //   localStorage.setItem("strategies", JSON.stringify(strategies))
+  // }, [strategies])
 
   const handleCreateStrategy = (strategyData: Omit<Strategy, 'id'>) => {
     const newStrategy: Strategy = {
@@ -30,12 +46,13 @@ export default function StrategyManager() {
       setStrategies([...strategies, newStrategy]);
     }
 
-    setShowForm(false);
+
+     localStorage.setItem("strategies", JSON.stringify(strategies))
+
   };
 
   const handleEditStrategy = (strategy: Strategy) => {
     setEditingStrategy(strategy);
-    setShowForm(true);
   };
 
   const handleDeleteStrategy = (id: string) => {
@@ -44,42 +61,25 @@ export default function StrategyManager() {
 
   const handleCancelEdit = () => {
     setEditingStrategy(null);
-    setShowForm(false);
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Trading Strategy Manager</h1>
-          <p className="mt-2 text-lg text-gray-600">Create and manage your trading strategies</p>
-        </div>
-
+      <div className="max-w-7xl  ">
         <div className="mb-6">
-          {!showForm ? (
-            <Button
-              variant="secondary"
-              onClick={() => setShowForm(true)}
-            >
-              Create New Strategy
-            </Button>
-          ) : (
             <StrategyForm
               onSubmit={handleCreateStrategy}
               editingStrategy={editingStrategy}
               onCancel={handleCancelEdit}
             />
-          )}
         </div>
 
-        <div className="mt-8">
+        {/* <div className="mt-8">
           <StrategyTable
             strategies={strategies}
             onEdit={handleEditStrategy}
             onDelete={handleDeleteStrategy}
           />
-        </div>
+        </div> */}
       </div>
-    </div>
   );
 }
